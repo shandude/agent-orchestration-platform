@@ -69,6 +69,28 @@ def build_system_prompt(agent: dict[str, Any]) -> str:
     return "\n\n".join(parts)
 
 
+def _text_of(content: Any) -> str:
+    """Normalise an LLM message's content to a plain string.
+
+    Newer Gemini models (2.5+) can return `content` as a list of typed parts
+    (e.g. [{'type': 'text', 'text': '...'}, ...]) rather than a bare string.
+    We flatten that to text so it persists cleanly and routes correctly.
+    """
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        out: list[str] = []
+        for part in content:
+            if isinstance(part, str):
+                out.append(part)
+            elif isinstance(part, dict):
+                out.append(part.get("text") or part.get("content") or "")
+        return "".join(out)
+    return str(content)
+
+
 def _execute_tool_call(tool_call: dict[str, Any]) -> str:
     name = tool_call.get("name", "")
     args = tool_call.get("args", {}) or {}
@@ -88,7 +110,7 @@ def make_agent_node(
 ) -> Callable[[dict], Awaitable[dict]]:
     """Return an async node function for the given agent snapshot."""
 
-    model_name = agent.get("model") or "gemini-2.0-flash"
+    model_name = agent.get("model") or "gemini-2.5-flash"
     temperature = float(agent.get("temperature", 0.3))
     max_tokens = int(agent.get("max_tokens", 1024))
     memory_window = int(agent.get("memory_window", 10))
@@ -123,7 +145,7 @@ def make_agent_node(
                 # Record the LLM's "I want to call tools" turn (cost counts).
                 await ctx.record_message(
                     MessageRole.agent,
-                    response.content or f"(calling {len(tool_calls)} tool(s))",
+                    _text_of(response.content) or f"(calling {len(tool_calls)} tool(s))",
                     agent_id=agent.get("id"),
                     agent_name=agent.get("name"),
                     usage=usage,
@@ -150,14 +172,14 @@ def make_agent_node(
             final = response
             await ctx.record_message(
                 MessageRole.agent,
-                response.content or "",
+                _text_of(response.content),
                 agent_id=agent.get("id"),
                 agent_name=agent.get("name"),
                 usage=usage,
             )
             break
 
-        text = (final.content if final else "") or ""
+        text = _text_of(final.content) if final else ""
         await ctx.log(
             "node_end",
             f"{agent.get('name', node_id)} finished.",

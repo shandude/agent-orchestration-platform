@@ -26,7 +26,7 @@ from langgraph.graph.message import add_messages
 from app.config import get_settings
 from app.database import SessionLocal
 from app.models import Agent, MessageRole, Run, RunStatus, Workflow
-from app.runtime.agent_node import make_agent_node
+from app.runtime.agent_node import _text_of, make_agent_node
 from app.runtime.context import RunContext
 from app.runtime.events import Event, event_bus
 from app.runtime.llm import build_llm
@@ -76,7 +76,7 @@ async def _llm_route(last_output: str, edges: list[dict]) -> str | None:
     try:
         llm = build_llm(temperature=0.0, max_tokens=8)
         resp = await llm.ainvoke(prompt)
-        digits = "".join(c for c in (resp.content or "") if c.isdigit())
+        digits = "".join(c for c in _text_of(resp.content) if c.isdigit())
         if digits:
             idx = int(digits[0])
             if 0 <= idx < len(edges):
@@ -208,7 +208,7 @@ async def execute_run(run_id: str, workflow_id: str, input_text: str) -> str:
         )
         output = result.get("last_output") or ""
         if not output and result.get("messages"):
-            output = result["messages"][-1].content or ""
+            output = _text_of(result["messages"][-1].content)
         await ctx.finalize(RunStatus.completed, output, None)
         return output
     except Exception as exc:  # noqa: BLE001

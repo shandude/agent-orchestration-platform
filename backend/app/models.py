@@ -63,7 +63,7 @@ class Agent(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     role: Mapped[str] = mapped_column(String, default="")
     system_prompt: Mapped[str] = mapped_column(Text, default="")
-    model: Mapped[str] = mapped_column(String, default="gemini-2.0-flash")
+    model: Mapped[str] = mapped_column(String, default="gemini-2.5-flash")
 
     # Configurable dimensions (stored as JSON for flexibility).
     tools: Mapped[list] = mapped_column(JSON, default=list)        # ["web_search", ...]

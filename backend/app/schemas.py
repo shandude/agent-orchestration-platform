@@ -16,7 +16,7 @@ class AgentBase(BaseModel):
     name: str
     role: str = ""
     system_prompt: str = ""
-    model: str = "gemini-2.0-flash"
+    model: str = "gemini-2.5-flash"
     tools: list[str] = Field(default_factory=list)
     channels: list[str] = Field(default_factory=list)
     skills: list[str] = Field(default_factory=list)

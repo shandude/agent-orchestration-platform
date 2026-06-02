@@ -21,21 +21,51 @@ import httpx
 
 # ── Individual tool implementations ─────────────────────────────────
 def web_search(query: str, max_results: int = 5) -> str:
-    """Search the public web (DuckDuckGo) and return top result snippets."""
+    """Search the public web (DuckDuckGo) and return top result snippets.
+
+    DuckDuckGo occasionally rate-limits or blocks a given network/IP. To stay
+    useful during a live demo we (a) retry across DDG backends with a short
+    pause, and (b) return an explicit, actionable message when search is
+    unavailable so the calling agent degrades gracefully (answers from its own
+    knowledge) instead of looping on empty results.
+    """
+    import time
+
     try:
         from ddgs import DDGS
 
-        with DDGS() as ddgs:
-            results = list(ddgs.text(query, max_results=max_results))
+        results: list[dict] = []
+        # Try the default backend, then explicit alternates.
+        for attempt, backend in enumerate(("auto", "html", "lite")):
+            try:
+                with DDGS() as ddgs:
+                    results = list(
+                        ddgs.text(query, max_results=max_results, backend=backend)
+                    )
+                if results:
+                    break
+            except Exception:  # noqa: BLE001 — try the next backend
+                pass
+            if attempt < 2:
+                time.sleep(1.0)  # brief pause before retrying a different backend
+
         if not results:
-            return f"No web results found for: {query!r}"
+            return (
+                f"[web_search unavailable for {query!r} — search backend returned "
+                "no results (possibly rate-limited). Answer from your own knowledge "
+                "and clearly note that live web results were not available.]"
+            )
+
         lines = [
             f"{i + 1}. {r.get('title', '')}\n   {r.get('body', '')}\n   {r.get('href', '')}"
             for i, r in enumerate(results)
         ]
         return "\n".join(lines)
     except Exception as exc:  # noqa: BLE001 — tools must fail soft
-        return f"web_search error: {exc}"
+        return (
+            f"[web_search error: {exc}. Answer from your own knowledge and note "
+            "that live web results were not available.]"
+        )
 
 
 def http_get(url: str) -> str:

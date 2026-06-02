@@ -20,13 +20,14 @@ from app.config import get_settings
 
 # USD per 1,000,000 tokens: (input, output). Keep keys lowercase.
 _PRICING: dict[str, tuple[float, float]] = {
+    "gemini-2.5-flash": (0.30, 2.50),
+    "gemini-2.5-flash-lite": (0.10, 0.40),
+    "gemini-2.5-pro": (1.25, 10.00),
     "gemini-2.0-flash": (0.10, 0.40),
     "gemini-2.0-flash-lite": (0.075, 0.30),
-    "gemini-1.5-flash": (0.075, 0.30),
-    "gemini-1.5-flash-8b": (0.0375, 0.15),
-    "gemini-1.5-pro": (1.25, 5.00),
+    "gemini-flash-latest": (0.30, 2.50),
 }
-_DEFAULT_PRICE = (0.10, 0.40)
+_DEFAULT_PRICE = (0.30, 2.50)
 
 
 @dataclass

@@ -42,7 +42,7 @@ def seed_templates(db: Session) -> None:
                 "Gather accurate, up-to-date facts on the user's topic using the "
                 "web_search tool. Produce concise bullet-point findings with sources."
             ),
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             tools=["web_search", "http_get"],
             skills=["research", "fact-finding"],
             guardrails=["Never invent facts or sources."],
@@ -55,7 +55,7 @@ def seed_templates(db: Session) -> None:
                 "transcript), write a clear, well-structured ~200-word summary for "
                 "a general audience."
             ),
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             skills=["writing", "summarization"],
         )
         editor = _get_or_create_agent(
@@ -67,7 +67,7 @@ def seed_templates(db: Session) -> None:
                 "REVISE followed by specific, actionable feedback. If it is good, "
                 "reply starting with the word APPROVED followed by the final text."
             ),
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             temperature=0.0,
             skills=["editing", "quality-control"],
             guardrails=["Always begin your reply with either REVISE or APPROVED."],
@@ -113,7 +113,7 @@ def seed_templates(db: Session) -> None:
                 "with one word only — TECHNICAL or BILLING — optionally followed by "
                 "a one-line reason."
             ),
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             temperature=0.0,
             channels=["telegram"],          # ← reachable from Telegram
             skills=["classification", "routing"],
@@ -126,7 +126,7 @@ def seed_templates(db: Session) -> None:
                 "Help the user resolve their technical problem with clear, friendly, "
                 "step-by-step guidance. Use web_search if you need current details."
             ),
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             tools=["web_search"],
             skills=["troubleshooting"],
             guardrails=["Never ask for passwords or full card numbers."],
@@ -138,7 +138,7 @@ def seed_templates(db: Session) -> None:
                 "Help the user with billing, invoices, refunds and subscription "
                 "questions in a clear, reassuring tone."
             ),
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             skills=["billing"],
             guardrails=["Never ask for full card numbers or CVV."],
         )

@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     # ── LLM ────────────────────────────────────────────────────────
     google_api_key: str = ""
-    default_model: str = "gemini-2.0-flash"
+    default_model: str = "gemini-2.5-flash"
 
     # ── Messaging ──────────────────────────────────────────────────
     telegram_bot_token: str = ""
