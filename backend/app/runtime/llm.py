@@ -63,11 +63,20 @@ def build_llm(
     temperature: float = 0.3,
     max_tokens: int = 1024,
 ) -> ChatGoogleGenerativeAI:
-    """Construct a Gemini chat model bound to the configured API key."""
+    """Construct a Gemini chat model bound to the configured API key.
+
+    NOTE on Gemini 2.5 "thinking": the 2.5 models reason internally and that
+    reasoning consumes the output-token budget. With a modest `max_output_tokens`
+    a model can spend the entire budget thinking and emit *zero* visible text.
+    We therefore disable thinking (`thinking_budget=0`) — our agents don't need
+    chain-of-thought, and this makes outputs reliable and cheaper. The kwarg is
+    ignored by non-thinking models, so it's safe across the board.
+    """
     settings = get_settings()
     return ChatGoogleGenerativeAI(
         model=model or settings.default_model,
         temperature=temperature,
         max_output_tokens=max_tokens,
         google_api_key=settings.google_api_key,
+        thinking_budget=0,
     )

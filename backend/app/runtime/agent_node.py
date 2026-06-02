@@ -20,6 +20,7 @@ from typing import Any, Awaitable, Callable
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
+    HumanMessage,
     SystemMessage,
     ToolMessage,
 )
@@ -91,6 +92,28 @@ def _text_of(content: Any) -> str:
     return str(content)
 
 
+def _render_history(history: list[BaseMessage]) -> str:
+    """Render the shared transcript as attributed lines for context.
+
+    Each message becomes `Name: text` (or `User: ...` for the human), so the
+    next agent can see who said what without us replaying raw AIMessages (which
+    would confuse the model about whose turn it is).
+    """
+    lines: list[str] = []
+    for m in history:
+        text = _text_of(getattr(m, "content", "")).strip()
+        if not text:
+            continue
+        if isinstance(m, HumanMessage):
+            who = "User"
+        elif isinstance(m, AIMessage):
+            who = getattr(m, "name", None) or "Assistant"
+        else:
+            continue  # skip tool/system noise in the cross-agent view
+        lines.append(f"{who}: {text}")
+    return "\n".join(lines)
+
+
 def _execute_tool_call(tool_call: dict[str, Any]) -> str:
     name = tool_call.get("name", "")
     args = tool_call.get("args", {}) or {}
@@ -132,7 +155,22 @@ def make_agent_node(
         if memory_window > 0:
             history = history[-memory_window:]
 
-        working: list[BaseMessage] = [system, *history]
+        # Flatten the shared transcript into ONE human-framed context turn.
+        #
+        # Why: in a multi-agent graph the transcript usually ends on a previous
+        # agent's AIMessage. If we replayed that directly, Gemini would see "the
+        # assistant already answered" and return an empty turn. Instead we render
+        # the conversation so far as labelled context inside a HumanMessage, so
+        # every agent always receives a turn that ends on human input and is
+        # prompted to actually produce its contribution.
+        convo = _render_history(history)
+        prompt = (
+            f"Conversation so far:\n{convo}\n\n"
+            f"You are {agent.get('name', node_id)}. Provide your contribution now."
+            if convo
+            else "Begin the task."
+        )
+        working: list[BaseMessage] = [system, HumanMessage(content=prompt)]
 
         # ── tool loop ────────────────────────────────────────────────
         final: AIMessage | None = None
