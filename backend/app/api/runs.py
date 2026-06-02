@@ -14,9 +14,11 @@ router = APIRouter(prefix="/api", tags=["runs"])
 
 
 @router.post("/workflows/{workflow_id}/run", response_model=RunOut, status_code=202)
-def run_workflow_endpoint(
+async def run_workflow_endpoint(
     workflow_id: str, payload: RunRequest, db: Session = Depends(get_db)
 ):
+    # NOTE: this handler must be `async` so it runs on the event loop —
+    # `launch_run` calls `asyncio.create_task`, which needs a running loop.
     if not get_settings().llm_enabled:
         raise HTTPException(400, "GOOGLE_API_KEY is not configured on the server.")
     wf = db.get(Workflow, workflow_id)
